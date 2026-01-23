@@ -16,21 +16,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('password'),
-            'isAdmin' => true,
+            'isAdmin' => false,
             'email_verified_at' => now(),
             'points_balance' => 0,
             'wallet_balance' => 0,
         ]);
-
-         if (app()->environment('local', 'staging')) {
-            User::factory()->count(100)->create();
-        }
+        User::factory(10)->create();
+        $this->call([
+            AdminUserSeeder::class,
+            CourseSeeder::class,
+            CourseSectionSeeder::class,
+        ]);
+        
 
     }
 }

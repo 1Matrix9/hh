@@ -18,7 +18,7 @@ class VideoFactory extends Factory
     public function definition(): array
     {
         return [
-            'section_id' => CourseSection::factory(),
+            'section_id' => CourseSection::inRandomOrder()->id,
             'title' => fake()->sentence(),
             'video_url' => fake()->url(),
             'duration' => fake()->numberBetween(5, 60), // duration in minutes

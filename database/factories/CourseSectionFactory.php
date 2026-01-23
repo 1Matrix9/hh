@@ -18,7 +18,8 @@ class CourseSectionFactory extends Factory
     public function definition(): array
     {
         return [
-            'course_id' => Course::factory(),
+            // in random order from courses
+            'course_id' => Course::inRandomOrder()->first()->id,
             'title' => fake()->sentence(),
             'order_index' => 1,
         ];

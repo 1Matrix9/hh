@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+
+    'bunny' => [
+        'stream_library_id' => env('BUNNY_STREAM_LIBRARY_ID'),
+        'stream_api_key'    => env('BUNNY_STREAM_API_KEY'),
+        'signing_key'       => env('BUNNY_STREAM_SIGNING_KEY'),
+    ],
+
+
 ];

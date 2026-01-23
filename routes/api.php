@@ -84,8 +84,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{course_id}/course-sections/{section_id}/videos/{id}', [VideoController::class, 'show']);
     // Admin-only video routes
     Route::middleware('admin')->group(function () {
+        Route::put('/courses/{course_id}/course-sections/{section_id}/videos/reorder', [VideoController::class, 'reorder']);
         Route::post('/courses/{course_id}/course-sections/{section_id}/videos', [VideoController::class, 'store']);
         Route::put('/courses/{course_id}/course-sections/{section_id}/videos/{id}', [VideoController::class, 'update']);
         Route::delete('/courses/{course_id}/course-sections/{section_id}/videos/{id}', [VideoController::class, 'destroy']);
+        Route::post('/courses/{course_id}/course-sections/{section_id}/videos/{id}/upload', [VideoController::class, 'upload']);
     });
 });
