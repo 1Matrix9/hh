@@ -56,10 +56,12 @@ class AuthController extends Controller
 
     public function register(RegisterUserRequest $request)
     {
+        $validated = $request->validated();
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
             'isAdmin' => false,
             'points_balance' => 10,
             'wallet_balance' => 10,
@@ -108,45 +110,33 @@ class AuthController extends Controller
     /**
      * Reset user's password with token
      */
-    public function resetPassword(Request $request)
+   public function resetPassword(Request $request)
     {
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|min:6|confirmed',
         ]);
 
-        // Use Laravel's built-in Password facade
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password)
-                ])->setRememberToken(\Illuminate\Support\Str::random(60));
-
-                $user->save();
-
-                event(new PasswordReset($user));
-
-                // Optional: Revoke all tokens for security
-                $user->tokens()->delete();
+                ])->save();
             }
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return $this->ok(
-                'Password reset successful. You can now login with your new password.',
-                null,
-                200
-            );
+            return response()->json([
+                'message' => 'Password has been reset successfully.'
+            ], 200);
         }
 
-        return $this->error(
-            $status === Password::INVALID_TOKEN 
-                ? 'Invalid or expired reset token. Please request a new one.' 
-                : 'Unable to reset password. Please try again.',
-            400
-        );
+        return response()->json([
+            'message' => 'Invalid token or email.'
+        ], 400);
     }
+
 
 }
