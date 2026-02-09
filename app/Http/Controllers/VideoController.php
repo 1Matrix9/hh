@@ -58,7 +58,7 @@ class VideoController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'order_index' => 'required|integer',
-            // Optional legacy fields (usually set later)
+            
             'duration' => 'sometimes|integer',
             'video_url' => 'sometimes|nullable|url',
         ]);
@@ -102,6 +102,8 @@ class VideoController extends Controller
 
     public function upload($course_id, $section_id, $id, Request $request, BunnyStreamService $bunny)
     {
+        // Disable execution time limit for large video uploads
+        set_time_limit(0);
  
         $data = $request->validate([
             'file' => 'required|file|mimetypes:video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi|max:3072000000', // ~3GB
@@ -170,13 +172,6 @@ class VideoController extends Controller
         if ($signingKey && $video->bunny_guid) {
             $token = $this->generateBunnyToken($signingKey, $video->bunny_guid, 3600);
 
-            if (config('app.debug')) {
-                \Log::debug('Bunny token build', [
-                    'videoId' => $video->bunny_guid,
-                    'expires' => $this->lastTokenExpiry ?? null,
-                    'hash_preview' => isset($this->lastTokenHash) ? substr($this->lastTokenHash, 0, 10) : null,
-                ]);
-            }
         }
 
         return $this->ok('Video retrieved successfully', [
@@ -314,7 +309,7 @@ class VideoController extends Controller
             return $this->error('Course section not found in this course', 404);
         }
 
-        // Try to delete on Bunny, but don't block local delete if it fails
+       
         if ($video->bunny_guid) {
             try {
                 $bunny->deleteVideo($video->bunny_guid);
@@ -342,7 +337,7 @@ class VideoController extends Controller
             '*.order_index' => 'required|integer|min:0',
         ]);
         
-        // Validate course and section relation
+       
         $course = Course::find($course_id);
         if (!$course) {
             return $this->error('Course not found', 404);
@@ -373,11 +368,10 @@ class VideoController extends Controller
         $path = "/{$videoId}";
         $hash = hash_hmac('sha256', $secret . $path . $expires, $secret);
 
-        // Store for optional debug logging in show()
         $this->lastTokenExpiry = $expires;
         $this->lastTokenHash = $hash;
 
-        return $hash . $expires; // concatenate hash + expiry
+        return $hash . $expires; 
     }
 
     /**

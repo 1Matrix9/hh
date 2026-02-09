@@ -71,8 +71,6 @@ class BunnyStreamService
     // PHP
     public function updateVideo(string $guid, array $payload): array
     {
-        // Bunny expects PUT for updates on /videos/{guid}
-        // Supported keys include: title, isPublic, collectionId, thumbnail*, etc.
         $res = $this->client()
             ->put("/videos/{$guid}", $payload)
             ->throw();

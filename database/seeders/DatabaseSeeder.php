@@ -16,6 +16,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        User::factory()->create([
+            'name' => 'admin user',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+            'isAdmin' => true,
+            'email_verified_at' => now(),
+            'points_balance' => 10000,
+            'wallet_balance' => 10000,
+        ]);
         
         User::factory()->create([
             'name' => 'Test User',
@@ -28,9 +37,10 @@ class DatabaseSeeder extends Seeder
         ]);
         User::factory(10)->create();
         $this->call([
-            AdminUserSeeder::class,
             CourseSeeder::class,
             CourseSectionSeeder::class,
+            BlogSeeder::class,
+            UserCourseSeeder::class,
         ]);
         
 
