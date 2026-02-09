@@ -18,6 +18,12 @@ Route::get('/blogs/{id}', [BlogController::class, 'show']);
 // Password Reset Routes
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+// public course routes
+Route::get('/courses', [CourseController::class, 'index']);
+Route::get('/courses/{id}', [CourseController::class, 'show']);
+
+Route::get('/courses/{course_id}/course-sections', [CourseSectionController::class, 'index']);
+Route::get('/courses/{course_id}/course-sections/{id}', [CourseSectionController::class, 'show']);
 
 // Email verification
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
@@ -37,10 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/change-password', [UserController::class, 'changePassword']);
     Route::get('/user/wallet', [UserController::class, 'getWallet']);
     Route::get('/user/leaderboard', [UserController::class, 'getLeaderboard']);
+    Route::get('/leaderboard/top', [UserController::class, 'topLeaderboard']);
     // Admin-only user routes
     Route::middleware('admin')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
+        Route::post('/leaderboard/refresh', [UserController::class, 'refreshLeaderboard']);
     });
 
     // Admin-only Wallet routes
@@ -58,8 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Courses Routes
-    Route::get('/courses', [CourseController::class, 'index']);
-    Route::get('/courses/{id}', [CourseController::class, 'show']);
     Route::post('/courses/{id}/purchase', [CourseController::class, 'purchase']);
     Route::post('/courses/{id}/progress', [CourseController::class, 'updateProgress']);
     // Admin-only course routes
@@ -70,8 +76,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Course Section Routes
-    Route::get('/courses/{course_id}/course-sections', [CourseSectionController::class, 'index']);
-    Route::get('/courses/{course_id}/course-sections/{id}', [CourseSectionController::class, 'show']);
     // Admin-only course section routes
     Route::middleware('admin')->group(function () {
         Route::post('/courses/{course_id}/course-sections', [CourseSectionController::class, 'store']);

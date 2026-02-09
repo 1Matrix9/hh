@@ -8,6 +8,7 @@ use App\Services\BunnyStreamService;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PharIo\Manifest\Library;
 
 class VideoController extends Controller
 {
@@ -82,7 +83,15 @@ class VideoController extends Controller
 
         // Create Bunny video and store GUID/meta
         try {
-            $created = $bunny->createVideo($validated['title']); // ['guid','uploadUrl',...]
+            // Use course's library_id and api_key if available, otherwise use defaults
+            if ($course->library_id && $course->api_key) {
+                $bunnyService = new BunnyStreamService($course->library_id, $course->api_key);
+            } elseif ($course->library_id) {
+                $bunnyService = new BunnyStreamService($course->library_id, config('services.bunny.stream_api_key'));
+            } else {
+                $bunnyService = $bunny;
+            }
+            $created = $bunnyService->createVideo($validated['title']); // ['guid','uploadUrl',...]
             $video->update([
                 'bunny_guid' => $created['guid'] ?? null,
                 'status'     => 'uploading',
@@ -94,9 +103,18 @@ class VideoController extends Controller
         }
 
         // Note: Some libraries do not return uploadUrl; upload via PUT to /library/{LIB}/videos/{GUID}
+        // Recalculate course total duration and persist
+        try {
+            $course->total_duration = $course->totalDuration();
+            $course->save();
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to update course total_duration', ['course_id' => $course->id, 'error' => $e->getMessage()]);
+        }
+
         return $this->ok('Video created. Upload to the provided URL using PUT.', [
             'video' => $video,
             'upload_url' => $created['uploadUrl'] ?? null,
+            'course_total_duration' => $course->total_duration,
         ]);
     }
 
@@ -124,7 +142,16 @@ class VideoController extends Controller
         $file = $data['file'];
 
         try {
-            $bunny->uploadBinary($video->bunny_guid, $file->getRealPath());
+            // Prefer course-specific Bunny credentials when available (same logic as store)
+            if ($course->library_id && $course->api_key) {
+                $bunnyService = new BunnyStreamService($course->library_id, $course->api_key);
+            } elseif ($course->library_id) {
+                $bunnyService = new BunnyStreamService($course->library_id, config('services.bunny.stream_api_key'));
+            } else {
+                $bunnyService = $bunny;
+            }
+
+            $bunnyService->uploadBinary($video->bunny_guid, $file->getRealPath());
 
             $video->status = 'processing';
             $video->save();
@@ -168,19 +195,19 @@ class VideoController extends Controller
 
         // Token (works even if Bunny Player Token Auth is disabled; then it’s just ignored)
         $token = null;
-        $signingKey = (string) config('services.bunny.signing_key');
+        $libraryId = $course->library_id ?? (string) config('services.bunny.stream_library_id');
+        $signingKey = $course->api_key ?? (string) config('services.bunny.signing_key');
         if ($signingKey && $video->bunny_guid) {
             $token = $this->generateBunnyToken($signingKey, $video->bunny_guid, 3600);
-
         }
 
         return $this->ok('Video retrieved successfully', [
             'video' => $video,
             'playback' => [
-                'library_id' => (string) config('services.bunny.stream_library_id'),
+                'library_id' => (string) $libraryId,
                 'video_id'   => $video->bunny_guid,
                 'token'      => $token,
-                'iframe_url' => $this->iframeUrl($video->bunny_guid, $token),
+                'iframe_url' => $this->iframeUrl($video->bunny_guid, $token, $libraryId),
             ],
         ]);
     }
@@ -312,7 +339,16 @@ class VideoController extends Controller
        
         if ($video->bunny_guid) {
             try {
-                $bunny->deleteVideo($video->bunny_guid);
+                // Prefer course-specific Bunny credentials when available
+                if ($course->library_id && $course->api_key) {
+                    $bunnyService = new BunnyStreamService($course->library_id, $course->api_key);
+                } elseif ($course->library_id) {
+                    $bunnyService = new BunnyStreamService($course->library_id, config('services.bunny.stream_api_key'));
+                } else {
+                    $bunnyService = $bunny;
+                }
+
+                $bunnyService->deleteVideo($video->bunny_guid);
             } catch (\Throwable $e) {
                 \Log::warning('Bunny delete failed', [
                     'guid' => $video->bunny_guid,
@@ -377,10 +413,10 @@ class VideoController extends Controller
     /**
      * Build the Bunny iframe URL and append token if provided.
      */
-    protected function iframeUrl(?string $videoId, ?string $token): ?string
+    protected function iframeUrl(?string $videoId, ?string $token, ?string $libraryId = null): ?string
     {
         if (!$videoId) return null;
-        $lib = (string) config('services.bunny.stream_library_id');
+        $lib = $libraryId ?? (string) config('services.bunny.stream_library_id');
         $url = "https://iframe.mediadelivery.net/embed/{$lib}/{$videoId}";
         if ($token) {
             $url .= "?token={$token}";

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Leaderboard;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -117,6 +119,58 @@ class UserController extends Controller
         return $this->ok('Leaderboard retrieved successfully', [
             'rank' => $leaderboard->rank,
             'points' => $leaderboard->points
+        ]);
+    }
+
+    /**
+     * Admin: Recalculate and refresh the leaderboard from users' points.
+     */
+    public function refreshLeaderboard(Request $request)
+    {
+        $users = User::orderByDesc('points_balance')->get(['id', 'points_balance']);
+
+        $prevPoints = null;
+        $rank = 0;
+        $updateat = date('Y-m-d H:i:s', time());
+        foreach ($users as $u) {
+            if ($prevPoints === null || $u->points_balance !== $prevPoints) {
+                $rank++;
+            }
+            //dd($u->id, $u->points_balance, $rank, $updateat);
+
+            Leaderboard::updateOrCreate(
+                ['user_id' => $u->id],
+                ['points' => $u->points_balance ?? 0, 'rank' => $rank, 'updated_at' => $updateat]
+            );
+            $prevPoints = $u->points_balance;
+        }
+
+        return $this->ok('Leaderboard refreshed successfully', [
+            'users_processed' => $users->count(),
+        ]);
+    }
+
+    /**
+     * Return top 100 leaderboard entries (rank, points, and user info).
+     */
+    public function topLeaderboard(Request $request)
+    {
+        $rows = DB::table('leaderboards')
+            ->join('users', 'leaderboards.user_id', '=', 'users.id')
+            ->select(
+                'users.id as user_id',
+                'users.name',
+                'users.email',
+                'leaderboards.points',
+                'leaderboards.rank',
+                'leaderboards.updated_at'
+            )
+            ->orderBy('leaderboards.rank', 'asc')
+            ->limit(100)
+            ->get();
+
+        return $this->ok('Top leaderboard retrieved successfully', [
+            'leaderboard' => $rows,
         ]);
     }
 

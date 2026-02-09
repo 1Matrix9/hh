@@ -36,13 +36,5 @@ class DatabaseSeeder extends Seeder
             'wallet_balance' => 0,
         ]);
         User::factory(10)->create();
-        $this->call([
-            CourseSeeder::class,
-            CourseSectionSeeder::class,
-            BlogSeeder::class,
-            UserCourseSeeder::class,
-        ]);
-        
-
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Traits\ApiResponses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
@@ -93,10 +94,16 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'subtitle' => 'required|string|max:255',
             'description' => 'required|string',
-            'total_duration' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
+            'library_id' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:255',
+            'thumbnail' => 'nullable|image|max:2048',
         ]);
 
+        if ($request->hasFile('thumbnail')) {
+            $validated['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
+        }
+        $validated['total_duration'] = 0; // default duration, will be updated when sections/videos are added
         $course = Course::create($validated);
 
         return $this->ok('Course created successfully', [
@@ -118,7 +125,19 @@ class CourseController extends Controller
             'description' => 'sometimes|required|string',
             'total_duration' => 'sometimes|required|integer|min:1',
             'price' => 'sometimes|required|numeric|min:0',
+            'library_id' => 'sometimes|nullable|string|max:255',
+            'api_key' => 'sometimes|nullable|string|max:255',
+            'thumbnail' => 'sometimes|nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('thumbnail')) {
+            // remove old thumbnail if present
+            if ($course->thumbnail) {
+                Storage::disk('public')->delete($course->thumbnail);
+            }
+
+            $validated['thumbnail'] = $request->file('thumbnail')->store('thumbnails', 'public');
+        }
 
         $course->update($validated);
 

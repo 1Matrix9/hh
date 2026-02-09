@@ -10,7 +10,7 @@ class Video extends Model
     use HasFactory;
     protected $fillable = [
         'section_id', 'title', 'bunny_guid', 'status',
-        'duration', 'video_url', 'order_index', 'meta',
+        'duration', 'order_index', 'meta',
     ];
 
     protected $casts = [
