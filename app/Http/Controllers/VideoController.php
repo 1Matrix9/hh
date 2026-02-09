@@ -123,6 +123,25 @@ class VideoController extends Controller
         // Disable execution time limit for large video uploads
         set_time_limit(0);
  
+        // Quick diagnostic: if no file was detected, return a helpful message (show more details only when app.debug=true).
+        if (!$request->hasFile('file')) {
+            if (config('app.debug')) {
+                $files = $_FILES ?? null;
+                return response()->json([
+                    'message' => 'No file detected in the request. Possible causes: missing multipart/form-data, server limits (post_max_size / upload_max_filesize), or a mismatch in the form field name.',
+                    'status' => 422,
+                    'diagnostic' => [
+                        '_FILES' => $files,
+                        'post_max_size' => ini_get('post_max_size'),
+                        'upload_max_filesize' => ini_get('upload_max_filesize'),
+                        'max_input_time' => ini_get('max_input_time'),
+                    ]
+                ], 422);
+            }
+
+            return $this->error('The file field is required.', 422);
+        }
+
         $data = $request->validate([
             'file' => 'required|file|mimetypes:video/mp4,video/quicktime,video/x-matroska,video/webm,video/avi|max:3072000000', // ~3GB
         ]);
