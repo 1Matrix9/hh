@@ -35,6 +35,5 @@ class DatabaseSeeder extends Seeder
             'points_balance' => 0,
             'wallet_balance' => 0,
         ]);
-        User::factory(10)->create();
     }
 }
