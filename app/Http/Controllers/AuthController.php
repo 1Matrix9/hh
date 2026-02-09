@@ -63,8 +63,8 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'isAdmin' => false,
-            'points_balance' => 10,
-            'wallet_balance' => 10,
+            'points_balance' => 0,
+            'wallet_balance' => 0,
             'email_verified_at' => now(), // Auto-verify for now
         ]);
 
