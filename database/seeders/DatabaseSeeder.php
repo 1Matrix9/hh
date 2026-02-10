@@ -16,24 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'admin user',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'isAdmin' => true,
-            'email_verified_at' => now(),
-            'points_balance' => 10000,
-            'wallet_balance' => 10000,
-        ]);
-        
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => Hash::make('password'),
-            'isAdmin' => false,
-            'email_verified_at' => now(),
-            'points_balance' => 0,
-            'wallet_balance' => 0,
-        ]);
+        // 100 regular users
+        User::factory()->count(100)->create();
     }
 }
