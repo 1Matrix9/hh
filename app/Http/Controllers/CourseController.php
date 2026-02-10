@@ -146,6 +146,21 @@ class CourseController extends Controller
         ]);
     }
 
+    // index function to list all courses with enrolled status for authenticated user
+    public function list(Request $request)
+    {
+        $user = $request->user();
+        $courses = Course::orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($course) use ($user) {
+                $course->enrolled = $user ? $user->courses()->where('course_id', $course->id)->exists() : false;
+                return $course;
+            });
+        return $this->ok('Courses retrieved successfully', [
+            'courses' => $courses
+        ]);
+    }
+
     public function destroy($id)
     {
         $course = Course::find($id);

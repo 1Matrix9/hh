@@ -68,6 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Courses Routes
     Route::post('/courses/{id}/purchase', [CourseController::class, 'purchase']);
     Route::post('/courses/{id}/progress', [CourseController::class, 'updateProgress']);
+    // list user courses
+    Route::get('/user/courses', [CourseController::class, 'list']);
     // Admin-only course routes
     Route::middleware('admin')->group(function () {
         Route::post('/courses', [CourseController::class, 'store']);
